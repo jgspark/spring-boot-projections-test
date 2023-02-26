@@ -1,6 +1,7 @@
 package pl.aurora.projections.domain.sample.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import pl.aurora.projections.domain.sample.service.SampleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/sample")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -23,6 +25,31 @@ public class SampleController {
     @GetMapping("/init")
     public void init() {
         sampleService.init(OBJECTS_PER_ITERATION);
+    }
+
+    @GetMapping("/test2")
+    public void testTimes2() {
+
+        List<Long> dynamicTimesByClass = new ArrayList<>();
+
+        List<Long> dynamicTimesByInterface = new ArrayList<>();
+
+        for (int x = 0; x < ITERATIONS; x++) {
+
+            long classBefore = System.currentTimeMillis();
+            sampleService.testDynamicProjection();
+            long classAfter = System.currentTimeMillis();
+            dynamicTimesByClass.add(classAfter - classBefore);
+
+            long dynamicBefore = System.currentTimeMillis();
+            sampleService.testDynamicProjectionByInterface();
+            long dynamicAfter = System.currentTimeMillis();
+            dynamicTimesByInterface.add(dynamicAfter - dynamicBefore);
+        }
+
+        printTime(dynamicTimesByClass, "Dynamic projections By Class took");
+        printTime(dynamicTimesByInterface, "Dynamic projections By Interface took");
+        printObjectCount();
     }
 
     @GetMapping("/test")
@@ -65,23 +92,31 @@ public class SampleController {
             dynamicTimes.add(dynamicAfter - dynamicBefore);
         }
 
-        System.out.println("Entity projections took " +
-                entityTimes.stream().mapToDouble(x -> x).average().orElseThrow(IllegalArgumentException::new) +
-                " ms on average out of " + ITERATIONS + " iterations.");
-        System.out.println("Constructor projections took " +
-                constructorTimes.stream().mapToDouble(x -> x).average().orElseThrow(IllegalArgumentException::new) +
-                " ms on average out of " + ITERATIONS + " iterations.");
-        System.out.println("Interface projections took " +
-                interfaceTimes.stream().mapToDouble(x -> x).average().orElseThrow(IllegalArgumentException::new) +
-                " ms on average out of " + ITERATIONS + " iterations.");
-        System.out.println("Tuple projections took " +
-                tupleTimes.stream().mapToDouble(x -> x).average().orElseThrow(IllegalArgumentException::new) +
-                " ms on average out of " + ITERATIONS + " iterations.");
-        System.out.println("Dynamic projections took " +
-                dynamicTimes.stream().mapToDouble(x -> x).average().orElseThrow(IllegalArgumentException::new) +
-                " ms on average out of " + ITERATIONS + " iterations.");
-        System.out.println("-----------------------------------------------------------------------");
-        System.out.println("One iteration retrieved (from DB) and projected " + OBJECTS_PER_ITERATION + " objects.");
-        System.out.println("-----------------------------------------------------------------------");
+        printTime(entityTimes, "Entity projections took");
+        printTime(constructorTimes, "Constructor projections took");
+        printTime(interfaceTimes, "Interface projections took");
+        printTime(tupleTimes, "Tuple projections took");
+        printTime(dynamicTimes, "Dynamic projections took");
+
+        printObjectCount();
+    }
+
+    private void printObjectCount(){
+        log.info("-----------------------------------------------------------------------");
+        log.info("One iteration retrieved (from DB) and projected {} objects.", OBJECTS_PER_ITERATION);
+        log.info("-----------------------------------------------------------------------");
+    }
+
+    private void printTime(List<Long> millisList, String title) {
+
+        double millis = millisList.stream().mapToDouble(x -> x).average().orElseThrow(IllegalArgumentException::new);
+        log.info("{} is {} ms", title, millis);
+        printSeconds(millis);
+    }
+
+    private void printSeconds(double millis) {
+        double seconds = (double) ((millis / 1000) % 60);
+        log.info("{} s", seconds);
+        log.info("-------------------");
     }
 }

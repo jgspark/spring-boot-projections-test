@@ -42,7 +42,13 @@ public class SampleService {
         List<Tuple> projections = sampleRepository.findAllNameOnlyTupleProjection();
     }
 
+    @Transactional(readOnly = true)
     public void testDynamicProjection() {
         List<DynamicProjectionDTO> projections = sampleRepository.findAllBy(DynamicProjectionDTO.class);
+    }
+
+    @Transactional(readOnly = true)
+    public void testDynamicProjectionByInterface() {
+        List<NameOnly> projections = sampleRepository.findAllBy(NameOnly.class);
     }
 }
